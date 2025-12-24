@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>案件應備文件檢核表</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1632/1632602.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root { --primary: #2c3e50; --bg: #f0f2f5; --email-blue: #0056b3; }
+        body { 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            background: var(--bg); margin: 0; padding: 15px; 
+            display: flex; flex-direction: column; align-items: center; 
+            -webkit-user-select: none; user-select: none; 
+            padding-bottom: 80px; /* 增加底部空間給按鈕 */
+        }
+        
+        .paper { 
+            background: white; width: 100%; max-width: 600px; 
+            padding: 30px; border-radius: 2px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            margin-bottom: 20px; 
+            border-top: 6px solid var(--primary);
+            box-sizing: border-box;
+        }
+
+        h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px double var(--primary); padding-bottom: 15px; margin-bottom: 25px; }
+
+        /* --- 第一部分：案件資訊 (使用 Grid 達成完美對齊) --- */
+        .info-grid {
+            display: grid;
+            /* 定義三欄：標籤(固定寬) 冒號(自動) 輸入框(填滿) */
+            grid-template-columns: 80px auto 1fr; 
+            gap: 15px 10px; /* 行距 列距 */
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .form-label { 
+            font-weight: bold; color: #333; 
+            text-align: justify; 
+            text-align-last: justify; /* 讓文字強迫左右對齊分散 */
+        }
+
+        .form-colon { font-weight: bold; }
+
+        /* 下拉選單與輸入框樣式 */
+        select, input[type="text"] {
+            width: 100%; border: none; border-bottom: 1px solid #000; 
+            font-size: 1rem; padding: 5px 0; background: transparent; 
+            border-radius: 0; outline: none; font-family: inherit;
+            -webkit-user-select: text; user-select: text;
+        }
+        select { 
+            -webkit-appearance: none; 
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 4 5"><path fill="%23333" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>') no-repeat right 0px center / 10px 10px; 
+            cursor: pointer;
+        }
+        input[type="text"]:focus { border-bottom: 2px solid var(--primary); }
+
+        /* --- 第二部分：清單 --- */
+        .checklist-container { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #fafafa; }
+        
+        .instruction { 
+            font-size: 0.95rem; color: #555; font-weight: bold; 
+            margin-bottom: 20px; line-height: 1.6; 
+            border-bottom: 1px dashed #ccc; padding-bottom: 15px;
+        }
+        
+        .email-link {
+            display: block; /* 換行 */
+            color: var(--email-blue);
+            text-decoration: underline;
+            margin-left: 1.5em; /* 縮排對齊上一行的文字 */
+            margin-top: 5px;
+        }
+        
+        .check-item { display: flex; align-items: flex-start; margin-bottom: 12px; cursor: pointer; }
+        .check-item input[type="checkbox"] { 
+            width: 20px; height: 20px; margin-right: 12px; margin-top: 2px; 
+            accent-color: var(--primary); flex-shrink: 0; cursor: pointer;
+        }
+        .check-item span { font-size: 1rem; color: #333; line-height: 1.5; padding-top: 1px; }
+
+        /* 行內輸入框 (給「其他」使用) */
+        .inline-input {
+            border: none; border-bottom: 1px solid #666;
+            background: transparent; margin-left: 10px;
+            flex-grow: 1; font-size: 1rem; color: #333;
+            outline: none; width: 50px; /* 最小寬度 */
+        }
+        .inline-input:focus { border-bottom: 2px solid var(--primary); }
+
+        /* --- 按鈕群組 --- */
+        .btn-group { 
+            width: 100%; max-width: 600px; display: flex; gap: 15px; 
+            position: fixed; bottom: 20px; padding: 0 15px; box-sizing: border-box; z-index: 100;
+        }
+        .btn { 
+            flex: 1; border: none; padding: 15px; border-radius: 30px; 
+            font-size: 1rem; font-weight: bold; cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-img { background: var(--primary); color: white; }
+        .btn-share { background: #27ae60; color: white; }
+
+    </style>
+</head>
+<body>
+
+    <div class="paper" id="capture-area">
+        <h2>案件應備文件檢核表</h2>
+        
+        <div class="info-grid">
+            <div class="form-label">案由</div>
+            <div class="form-colon">：</div>
+            <div><input type="text" id="case-cause"></div>
+
+	    <div class="form-label">案件審級</div>
+            <div class="form-colon">：</div>
+            <div>
+                <select id="case-level">
+                    <option value="" disabled selected>請選擇...</option>
+                    <option value="民事一審">民事一審</option>
+                    <option value="民事二審">民事二審</option>
+                    <option value="民事三審">民事三審</option>
+                    <option value="刑事一審">刑事一審</option>
+                    <option value="刑事二審">刑事二審</option>
+                    <option value="刑事三審">刑事三審</option>
+                    <option value="行政訴願">行政訴願</option>
+                    <option value="行政一審">行政一審</option>
+                    <option value="行政二審">行政二審</option>
+                    <option value="強制執行">強制執行</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div class="form-label">備註</div>
+            <div class="form-colon">：</div>
+            <div><input type="text" id="note-top"></div>
+
+            
+        </div>
+
+        <div class="checklist-container">
+            <div class="instruction">
+                ★ 以下應備文件，均請提供文件影像之電子檔，並以電子郵件傳送至：
+                <span class="email-link">service@jeffreylaw.com.tw</span>
+            </div>
+
+            <label class="check-item"><input type="checkbox" value="警局通知"><span>警局通知</span></label>
+            <label class="check-item"><input type="checkbox" value="檢察署通知或處分書"><span>檢察署通知或處分書</span></label>
+            <label class="check-item"><input type="checkbox" value="法院通知或裁判"><span>法院通知或裁判</span></label>
+            <label class="check-item"><input type="checkbox" value="其他已經收到的公務機關公文"><span>其他已經收到的公務機關公文</span></label>
+            <label class="check-item"><input type="checkbox" value="委託人身分證正面"><span>委託人身分證正面</span></label>
+            <label class="check-item"><input type="checkbox" value="全戶戶籍謄本"><span>全戶戶籍謄本</span></label>
+            <label class="check-item"><input type="checkbox" value="個人戶籍謄本(記事欄請勿省略)"><span>個人戶籍謄本 (記事欄請勿省略)</span></label>
+            <label class="check-item"><input type="checkbox" value="除戶戶籍謄本"><span>除戶戶籍謄本</span></label>
+            <label class="check-item"><input type="checkbox" value="繼承系統表"><span>繼承系統表</span></label>
+            <label class="check-item"><input type="checkbox" value="與相對人往來的書面紀錄"><span>與相對人往來的書面紀錄</span></label>
+            <label class="check-item"><input type="checkbox" value="與本件有關的所有契約書面"><span>與本件有關的所有契約書面</span></label>
+            <label class="check-item"><input type="checkbox" value="與本件有關的網頁或對話紀錄截圖"><span>與本件有關的網頁或對話紀錄截圖</span></label>
+            <label class="check-item"><input type="checkbox" value="與本件有關的照片"><span>與本件有關的照片</span></label>
+            
+            <div class="check-item">
+                <input type="checkbox" id="chk-other" value="其他">
+                <span style="flex-grow: 1; display: flex; align-items: center;">
+                    <span style="white-space: nowrap;">其他</span>
+                    <input type="text" id="other-text" class="inline-input" placeholder="請輸入文件名稱">
+                </span>
+            </div>
+            
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                <span style="font-weight: bold; font-size: 0.9rem;">補充事項：</span>
+                <input type="text" id="note-bottom" style="width: 100%; border-bottom: 1px solid #ccc;">
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-img" onclick="generateImage(this)">
+            📷 生成圖片
+        </button>
+        <button class="btn btn-share" onclick="shareText(this)">
+            📤 分享清單
+        </button>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+      }
+
+      // 生成圖片功能
+      function generateImage(btn) {
+        const originalText = btn.innerText;
+        btn.innerText = "處理中...";
+        document.querySelector('.btn-group').style.display = 'none';
+
+        html2canvas(document.getElementById('capture-area'), {
+            scale: 2,
+            backgroundColor: "#ffffff"
+        }).then(canvas => {
+            const link = document.createElement('a');
+            const cause = document.getElementById('case-cause').value || '案件';
+            link.download = `應備文件_${cause}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            btn.innerText = originalText;
+            document.querySelector('.btn-group').style.display = 'flex';
+        }).catch(err => {
+            console.error(err);
+            alert('圖片生成失敗');
+            btn.innerText = originalText;
+            document.querySelector('.btn-group').style.display = 'flex';
+        });
+      }
+
+      // Web Share API 分享文字功能 (含其他輸入框邏輯)
+      function shareText(btn) {
+        // 1. 收集資料
+        const level = document.getElementById('case-level').value || "未指定審級";
+        const noteTop = document.getElementById('note-top').value;
+        const cause = document.getElementById('case-cause').value || "未填寫";
+        const noteBottom = document.getElementById('note-bottom').value;
+
+        // 2. 收集勾選項目
+        let checkedItems = [];
+        // 先抓一般項目
+        document.querySelectorAll('.checklist-container label input[type="checkbox"]:checked').forEach(chk => {
+            checkedItems.push("☑ " + chk.value);
+        });
+        
+        // 特別處理「其他」選項
+        const chkOther = document.getElementById('chk-other');
+        if (chkOther.checked) {
+            const otherText = document.getElementById('other-text').value.trim();
+            if (otherText) {
+                checkedItems.push("☑ 其他：" + otherText);
+            } else {
+                checkedItems.push("☑ 其他");
+            }
+        }
+
+        if (checkedItems.length === 0) {
+            return alert("請至少勾選一項應備文件！");
+        }
+
+        // 3. 組合文字內容
+        let shareContent = `【案件應備文件清單】\n\n`;
+        shareContent += `案由：${cause}\n`;
+        shareContent += `審級：${level}\n`;
+        if (noteTop) shareContent += `備註：${noteTop}\n`;
+        shareContent += `\n請準備以下文件電子檔，並以 Email 寄至：\nservice@jeffreylaw.com.tw\n\n`;
+        shareContent += checkedItems.join('\n');
+        
+        if (noteBottom) shareContent += `\n\n補充事項：${noteBottom}`;
+
+        // 4. 呼叫 Web Share API
+        if (navigator.share) {
+            navigator.share({
+                title: '應備文件清單',
+                text: shareContent
+            })
+            .then(() => console.log('分享成功'))
+            .catch((error) => console.log('分享取消或失敗', error));
+        } else {
+            navigator.clipboard.writeText(shareContent).then(() => {
+                alert("已將清單複製到剪貼簿！");
+            });
+        }
+      }
+    </script>
+</body>
+</html>
